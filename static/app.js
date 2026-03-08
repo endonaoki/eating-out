@@ -1,7 +1,7 @@
 const API = window.location.origin;
 const USER_KEY = 'eating_out_user_id';
-const DEFAULT_LAT = 35.6649;
-const DEFAULT_LNG = 139.3382;
+const DEFAULT_LAT = 35.6896;
+const DEFAULT_LNG = 139.6917;
 
 let userId = parseInt(localStorage.getItem(USER_KEY), 10);
 let map = null, marker = null;
@@ -65,21 +65,25 @@ async function refreshSummary() {
   document.getElementById('mealCount').textContent = s.meal_count;
 }
 
-async function searchAt(lat, lng) {
+async function searchAt(lat, lng, byDeficit = false) {
   const status = document.getElementById('locationStatus');
   const list = document.getElementById('recommendList');
-  status.textContent = `検索中 (${lat.toFixed(4)}, ${lng.toFixed(4)})...`;
+  status.textContent = byDeficit ? '足りない栄養を補うメニューを検索中...' : `検索中 (${lat.toFixed(4)}, ${lng.toFixed(4)})...`;
   list.innerHTML = '';
   try {
-    const data = await api(`/recommend?lat=${lat}&lng=${lng}&radius_km=3&user_id=${userId}`);
+    const params = new URLSearchParams({
+      lat, lng, radius_km: 5, user_id: userId
+    });
+    if (byDeficit) params.set('by_deficit', 'true');
+    const data = await api(`/recommend?${params}`);
     if (data.count === 0) {
-      status.textContent = 'このエリアにはまだ店舗データがありません。';
+      status.textContent = 'このエリアには店舗が見つかりませんでした。';
       list.innerHTML = `
-        <p class="hint">八王子・新宿・渋谷・池袋・横浜・大阪・名古屋・福岡の主要駅周辺でお試しください。
-        Google Places API を設定すると、より広い範囲で検索できます。</p>
+        <p class="hint">検索可能エリアは限られています。別の場所でお試しください。Google Places API を設定すると、より広範囲で検索できます。</p>
       `;
     } else {
-      status.textContent = `${data.count}件（予算${data.budget_limit}円・${data.calorie_limit}kcal以内）`;
+      const deficitMsg = data.deficit ? `（足りない栄養を補う順）` : '';
+      status.textContent = `${data.count}件 ${deficitMsg}`;
       list.innerHTML = data.recommendations.map(r => `
         <div class="rec-item">
           <div class="info">
@@ -95,6 +99,25 @@ async function searchAt(lat, lng) {
   }
 }
 
+document.getElementById('deficitBtn')?.addEventListener('click', async () => {
+  const status = document.getElementById('locationStatus');
+  status.textContent = '位置情報を取得中...';
+  try {
+    const pos = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+    });
+    await searchAt(pos.coords.latitude, pos.coords.longitude, true);
+  } catch (err) {
+    status.textContent = '位置情報を取得できませんでした。地図で場所を指定してください。';
+    document.getElementById('mapModal').style.display = 'flex';
+    setTimeout(() => {
+      selectedLat = DEFAULT_LAT;
+      selectedLng = DEFAULT_LNG;
+      initMap();
+    }, 100);
+  }
+});
+
 document.getElementById('findBtn')?.addEventListener('click', async () => {
   const status = document.getElementById('locationStatus');
   status.textContent = '位置情報を取得中...';
@@ -102,7 +125,7 @@ document.getElementById('findBtn')?.addEventListener('click', async () => {
     const pos = await new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
     });
-    await searchAt(pos.coords.latitude, pos.coords.longitude);
+    await searchAt(pos.coords.latitude, pos.coords.longitude, false);
   } catch (err) {
     status.textContent = '位置情報を取得できませんでした。地図で場所を指定してください。';
   }
@@ -148,7 +171,7 @@ function initMap() {
 
 document.getElementById('mapSearchBtn')?.addEventListener('click', async () => {
   document.getElementById('mapModal').style.display = 'none';
-  await searchAt(selectedLat, selectedLng);
+  await searchAt(selectedLat, selectedLng, false);
 });
 
 document.getElementById('mapClose')?.addEventListener('click', () => {
@@ -242,7 +265,7 @@ async function loadStats(period) {
       <div class="row"><span class="label">ビタミンC</span><span>${(s.totals.vitamin_c || 0).toFixed(0)} mg / 日平均 ${((s.totals.vitamin_c || 0) / (s.days || 1)).toFixed(0)}</span></div>
       ${bar((s.totals.vitamin_c || 0) / (s.days || 1), rec.vitamin_c || 100, 'vitamin')}
       <div class="row"><span class="label">外食費</span><span>${s.totals.price} 円 / 日平均 ${avg.price}</span></div>
-      <p class="hint" style="margin-top:12px">推奨（1日）: カロリー${rec.calories}kcal, タンパク質${rec.protein}g, 脂質${rec.fat}g, 炭水化物${rec.carbs}g</p>
+      <p class="hint" style="margin-top:14px">推奨（1日）: カロリー${rec.calories}kcal, P${rec.protein}g, F${rec.fat}g, C${rec.carbs}g</p>
     `;
   } catch (e) {
     container.innerHTML = '<p class="hint">データを取得できませんでした</p>';

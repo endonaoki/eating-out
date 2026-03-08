@@ -13,15 +13,31 @@ from src.services.places import fetch_nearby_restaurants
 router = APIRouter(prefix="/recommend", tags=["recommend"])
 
 
+def _get_nutrition_from_menu(session: Session, menu) -> dict:
+    """Menuから栄養素を取得（推定含む）"""
+    p = float(menu.protein or 0)
+    f = float(menu.fat or 0)
+    c = float(menu.carbs or 0)
+    return {
+        "protein": p,
+        "fat": f,
+        "carbs": c,
+        "iron": p * 0.15 + c * 0.02,
+        "calcium": p * 5 + f * 2,
+        "vitamin_c": c * 0.5,
+    }
+
+
 @router.get("")
 def recommend(
     lat: float = Query(..., description="緯度"),
     lng: float = Query(..., description="経度"),
-    radius_km: float = Query(1.0, ge=0.1, le=10.0, description="検索半径(km)"),
+    radius_km: float = Query(5.0, ge=1.0, le=15.0, description="検索半径(km)"),
     user_id: int | None = Query(None, description="ユーザーID（指定時は残り予算・カロリーでフィルタ）"),
     budget: int | None = Query(None, description="予算上限(円)（user_id未指定時）"),
     calories: int | None = Query(None, description="カロリー上限(kcal)（user_id未指定時）"),
     open_now: bool = Query(False, description="営業中のみ（Places API連携時）"),
+    by_deficit: bool = Query(False, description="足りない栄養を補うメニューを優先"),
     session: Session = Depends(get_db),
 ):
     """
@@ -91,6 +107,45 @@ def recommend(
     # 距離順ソート
     nearby.sort(key=lambda x: x[2])
 
+    # 足りない栄養の計算（by_deficit時）
+    deficit = {}
+    if by_deficit and user_id:
+        today = date.today()
+        logs = (
+            session.query(MealLog)
+            .filter(
+                MealLog.user_id == user_id,
+                func.date(MealLog.eaten_at) == today,
+            )
+            .all()
+        )
+        total_p, total_f, total_c = 0, 0, 0
+        for log in logs:
+            if log.menu_id:
+                m = session.get(Menu, log.menu_id)
+                if m:
+                    total_p += float(m.protein or 0)
+                    total_f += float(m.fat or 0)
+                    total_c += float(m.carbs or 0)
+            else:
+                total_p += float(log.manual_protein or 0)
+                total_f += float(log.manual_fat or 0)
+                total_c += float(log.manual_carbs or 0)
+        u = session.get(User, user_id)
+        if u:
+            age = (today.year - u.birth_year) if u.birth_year else 35
+            base_cal = 2000 if (u.gender or "").lower() != "female" else 1800
+            if age >= 30:
+                base_cal -= (age - 30) // 10 * 50
+            rec_p = base_cal * 0.2 / 4
+            rec_f = base_cal * 0.25 / 9
+            rec_c = base_cal * 0.55 / 4
+            deficit = {
+                "protein": max(0, rec_p - total_p),
+                "fat": max(0, rec_f - total_f),
+                "carbs": max(0, rec_c - total_c),
+            }
+
     # 各店舗のチェーンで、予算・カロリー内のメニューを取得
     results = []
     for item, chain_name, dist_km in nearby:
@@ -111,22 +166,37 @@ def recommend(
             .all()
         )
         for m in menus:
-            results.append(
-                {
-                    "menu_id": m.menu_id,
-                    "restaurant_name": rest_name,
-                    "chain_name": chain_name,
-                    "menu_name": m.menu_name,
-                    "price": m.price,
-                    "calories": m.calories,
-                    "distance_km": round(dist_km, 2),
-                    "distance_walk": f"徒歩約{int(dist_km * 12)}分" if dist_km < 2 else f"{dist_km:.1f}km",
-                }
-            )
+            r = {
+                "menu_id": m.menu_id,
+                "restaurant_name": rest_name,
+                "chain_name": chain_name,
+                "menu_name": m.menu_name,
+                "price": m.price,
+                "calories": m.calories,
+                "distance_km": round(dist_km, 2),
+                "distance_walk": f"徒歩約{int(dist_km * 12)}分" if dist_km < 2 else f"{dist_km:.1f}km",
+            }
+            if deficit:
+                n = _get_nutrition_from_menu(session, m)
+                score = 0
+                if deficit.get("protein", 0) > 0:
+                    score += n["protein"] * 2
+                if deficit.get("fat", 0) > 0:
+                    score += n["fat"]
+                if deficit.get("carbs", 0) > 0:
+                    score += n["carbs"]
+                r["_deficit_score"] = score
+            results.append(r)
+
+    if deficit:
+        results.sort(key=lambda x: x.get("_deficit_score", 0), reverse=True)
+        for r in results:
+            r.pop("_deficit_score", None)
 
     return {
         "budget_limit": budget_limit,
         "calorie_limit": calorie_limit,
+        "deficit": deficit if deficit else None,
         "count": len(results),
-        "recommendations": results[:20],  # 最大20件
+        "recommendations": results[:20],
     }

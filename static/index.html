@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Eating Out - 外食と健康のバランス</title>
+  <title>ラク食 - 外食でも、健康バランスを。</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body>
   <div id="app">
     <header class="hero">
-      <h1>Eating Out</h1>
-      <p class="tagline">外食と健康のバランスを、シンプルに。</p>
+      <h1 class="hero-title">ラク食</h1>
+      <p class="hero-tagline">外食でも、健康バランスを。</p>
     </header>
 
     <section id="setup" class="card" style="display:none">
@@ -31,7 +34,6 @@
     </section>
 
     <section id="main" style="display:none">
-      <!-- 1. 健康バランス（トップ） -->
       <section class="card">
         <h2>健康バランス <button id="settingsBtn" class="text-btn">設定</button></h2>
         <div class="period-tabs">
@@ -43,7 +45,6 @@
         <div id="statsContent" class="stats-detail"></div>
       </section>
 
-      <!-- 2. 本日の残り -->
       <section class="card summary">
         <h2>本日の残り</h2>
         <div class="stats">
@@ -53,28 +54,30 @@
         <p class="sub">本日 <span id="mealCount">0</span> 食記録</p>
       </section>
 
-      <!-- 3. 必要な栄養を摂るために食事を探す -->
       <section class="card">
         <h2>食事を探す</h2>
-        <p class="area-hint">検索対象: 八王子・新宿・渋谷・池袋・横浜・大阪・名古屋・福岡の主要駅周辺</p>
+        <p class="area-hint">検索可能エリアは限られています。Google Places API を設定すると、より広範囲で検索できます。</p>
         <div class="search-actions">
-          <button id="findBtn" class="primary">現在地から検索</button>
+          <button id="deficitBtn" class="primary">足りない栄養を補うおすすめ</button>
+          <button id="findBtn" class="secondary">現在地から検索</button>
           <button id="mapBtn" class="secondary">地図で場所を指定</button>
         </div>
         <p id="locationStatus" class="hint"></p>
         <div id="recommendList" class="list"></div>
       </section>
 
-      <!-- 4. 食事を記録 -->
       <section class="card">
         <h2>食事を記録</h2>
         <form id="manualLogForm">
           <label>メニュー名 <input type="text" id="manualMenu" placeholder="例: ラーメン"></label>
           <label>カロリー (kcal) <input type="number" id="manualCal" min="0"></label>
           <label>金額 (円) <input type="number" id="manualPrice" min="0"></label>
-          <label>タンパク質 (g) <input type="number" id="manualProtein" min="0" step="0.1" placeholder="任意"></label>
-          <label>脂質 (g) <input type="number" id="manualFat" min="0" step="0.1" placeholder="任意"></label>
-          <label>炭水化物 (g) <input type="number" id="manualCarbs" min="0" step="0.1" placeholder="任意"></label>
+          <details class="optional-fields">
+            <summary>栄養素（任意）</summary>
+            <label>タンパク質 (g) <input type="number" id="manualProtein" min="0" step="0.1" placeholder="省略可"></label>
+            <label>脂質 (g) <input type="number" id="manualFat" min="0" step="0.1" placeholder="省略可"></label>
+            <label>炭水化物 (g) <input type="number" id="manualCarbs" min="0" step="0.1" placeholder="省略可"></label>
+          </details>
           <button type="submit">記録</button>
         </form>
       </section>
@@ -103,8 +106,8 @@
     <div id="mapModal" class="modal" style="display:none">
       <div class="modal-content map-modal">
         <h3>検索場所を地図で指定</h3>
-        <p class="area-hint">八王子・東京・横浜・大阪・名古屋・福岡の主要駅周辺で検索できます。それ以外の地域は準備中です。</p>
-        <div id="map" style="height:320px; border-radius:8px;"></div>
+        <p class="area-hint">検索可能エリアは限られています。ピンを主要駅周辺に置いてお試しください。</p>
+        <div id="map" style="height:320px; border-radius:12px;"></div>
         <div class="map-actions">
           <button id="mapSearchBtn" class="primary">この場所で検索</button>
           <button type="button" id="mapClose">閉じる</button>
