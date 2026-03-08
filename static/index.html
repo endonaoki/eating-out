@@ -10,7 +10,6 @@
 <body>
   <div id="app">
     <header class="hero">
-      <div class="hero-overlay"></div>
       <h1>Eating Out</h1>
       <p class="tagline">外食と健康のバランスを、シンプルに。</p>
     </header>
@@ -32,8 +31,21 @@
     </section>
 
     <section id="main" style="display:none">
+      <!-- 1. 健康バランス（トップ） -->
+      <section class="card">
+        <h2>健康バランス <button id="settingsBtn" class="text-btn">設定</button></h2>
+        <div class="period-tabs">
+          <button class="tab active" data-period="day">日</button>
+          <button class="tab" data-period="week">週</button>
+          <button class="tab" data-period="month">月</button>
+          <button class="tab" data-period="year">年</button>
+        </div>
+        <div id="statsContent" class="stats-detail"></div>
+      </section>
+
+      <!-- 2. 本日の残り -->
       <section class="card summary">
-        <h2>本日の残り <button id="settingsBtn" class="text-btn">設定</button></h2>
+        <h2>本日の残り</h2>
         <div class="stats">
           <div class="stat"><span class="value" id="remainingCal">-</span><span class="unit">kcal</span></div>
           <div class="stat"><span class="value" id="remainingBudget">-</span><span class="unit">円</span></div>
@@ -41,8 +53,10 @@
         <p class="sub">本日 <span id="mealCount">0</span> 食記録</p>
       </section>
 
+      <!-- 3. 必要な栄養を摂るために食事を探す -->
       <section class="card">
-        <h2>店舗を探す</h2>
+        <h2>食事を探す</h2>
+        <p class="area-hint">検索対象: 八王子・新宿・渋谷・池袋・横浜・大阪・名古屋・福岡の主要駅周辺</p>
         <div class="search-actions">
           <button id="findBtn" class="primary">現在地から検索</button>
           <button id="mapBtn" class="secondary">地図で場所を指定</button>
@@ -51,6 +65,7 @@
         <div id="recommendList" class="list"></div>
       </section>
 
+      <!-- 4. 食事を記録 -->
       <section class="card">
         <h2>食事を記録</h2>
         <form id="manualLogForm">
@@ -62,17 +77,6 @@
           <label>炭水化物 (g) <input type="number" id="manualCarbs" min="0" step="0.1" placeholder="任意"></label>
           <button type="submit">記録</button>
         </form>
-      </section>
-
-      <section class="card">
-        <h2>健康バランス</h2>
-        <div class="period-tabs">
-          <button class="tab active" data-period="day">日</button>
-          <button class="tab" data-period="week">週</button>
-          <button class="tab" data-period="month">月</button>
-          <button class="tab" data-period="year">年</button>
-        </div>
-        <div id="statsContent" class="stats-detail"></div>
       </section>
     </section>
 
@@ -99,7 +103,7 @@
     <div id="mapModal" class="modal" style="display:none">
       <div class="modal-content map-modal">
         <h3>検索場所を地図で指定</h3>
-        <p class="hint">地図をクリックしてピンを置き、この場所で検索を実行</p>
+        <p class="area-hint">八王子・東京・横浜・大阪・名古屋・福岡の主要駅周辺で検索できます。それ以外の地域は準備中です。</p>
         <div id="map" style="height:320px; border-radius:8px;"></div>
         <div class="map-actions">
           <button id="mapSearchBtn" class="primary">この場所で検索</button>

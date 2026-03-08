@@ -11,21 +11,29 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 
 
 def _get_nutrition(session: Session, log: MealLog) -> dict:
+    base = {}
     if log.menu_id:
         m = session.get(Menu, log.menu_id)
         if m:
-            return {
+            base = {
                 "calories": m.calories,
                 "protein": float(m.protein or 0),
                 "fat": float(m.fat or 0),
                 "carbs": float(m.carbs or 0),
             }
-    return {
-        "calories": log.manual_calories or 0,
-        "protein": float(log.manual_protein or 0),
-        "fat": float(log.manual_fat or 0),
-        "carbs": float(log.manual_carbs or 0),
-    }
+    else:
+        base = {
+            "calories": log.manual_calories or 0,
+            "protein": float(log.manual_protein or 0),
+            "fat": float(log.manual_fat or 0),
+            "carbs": float(log.manual_carbs or 0),
+        }
+    # 鉄・カルシウム・ビタミンCの推定（タンパク質・脂質・炭水化物から簡易計算）
+    p, f, c = base["protein"], base["fat"], base["carbs"]
+    base["iron"] = p * 0.15 + c * 0.02  # 肉・穀物由来の推定
+    base["calcium"] = p * 5 + f * 2  # 乳製品・魚由来の推定
+    base["vitamin_c"] = c * 0.5  # 野菜・果物由来の推定
+    return base
 
 
 @router.get("/users/{user_id}")
@@ -65,13 +73,16 @@ def get_stats(
         .all()
     )
 
-    total = {"calories": 0, "protein": 0, "fat": 0, "carbs": 0, "price": 0}
+    total = {"calories": 0, "protein": 0, "fat": 0, "carbs": 0, "iron": 0, "calcium": 0, "vitamin_c": 0, "price": 0}
     for log in logs:
         n = _get_nutrition(session, log)
         total["calories"] += n["calories"]
         total["protein"] += n["protein"]
         total["fat"] += n["fat"]
         total["carbs"] += n["carbs"]
+        total["iron"] += n.get("iron", 0)
+        total["calcium"] += n.get("calcium", 0)
+        total["vitamin_c"] += n.get("vitamin_c", 0)
         if log.menu_id:
             m = session.get(Menu, log.menu_id)
             total["price"] += m.price if m else 0
@@ -107,6 +118,9 @@ def get_stats(
             "protein": round(rec_protein, 1),
             "fat": round(rec_fat, 1),
             "carbs": round(rec_carbs, 1),
+            "iron": 10,
+            "calcium": 700,
+            "vitamin_c": 100,
         },
         "meal_count": len(logs),
     }

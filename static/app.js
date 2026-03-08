@@ -71,17 +71,25 @@ async function searchAt(lat, lng) {
   status.textContent = `検索中 (${lat.toFixed(4)}, ${lng.toFixed(4)})...`;
   list.innerHTML = '';
   try {
-    const data = await api(`/recommend?lat=${lat}&lng=${lng}&radius_km=2&user_id=${userId}`);
-    status.textContent = `${data.count}件（予算${data.budget_limit}円・${data.calorie_limit}kcal以内）`;
-    list.innerHTML = data.recommendations.map(r => `
-      <div class="rec-item">
-        <div class="info">
-          <div class="name">${r.menu_name}</div>
-          <div class="meta">${r.chain_name} ${r.restaurant_name} · ${r.price}円 · ${r.calories}kcal · ${r.distance_walk}</div>
+    const data = await api(`/recommend?lat=${lat}&lng=${lng}&radius_km=3&user_id=${userId}`);
+    if (data.count === 0) {
+      status.textContent = 'このエリアにはまだ店舗データがありません。';
+      list.innerHTML = `
+        <p class="hint">八王子・新宿・渋谷・池袋・横浜・大阪・名古屋・福岡の主要駅周辺でお試しください。
+        Google Places API を設定すると、より広い範囲で検索できます。</p>
+      `;
+    } else {
+      status.textContent = `${data.count}件（予算${data.budget_limit}円・${data.calorie_limit}kcal以内）`;
+      list.innerHTML = data.recommendations.map(r => `
+        <div class="rec-item">
+          <div class="info">
+            <div class="name">${r.menu_name}</div>
+            <div class="meta">${r.chain_name} ${r.restaurant_name} · ${r.price}円 · ${r.calories}kcal · ${r.distance_walk}</div>
+          </div>
+          <button class="log-btn" onclick="logFromRecommend(${r.menu_id})">記録</button>
         </div>
-        <button class="log-btn" onclick="logFromRecommend(${r.menu_id})">記録</button>
-      </div>
-    `).join('');
+      `).join('');
+    }
   } catch (err) {
     status.textContent = 'エラー: ' + (err.message || '検索に失敗しました');
   }
@@ -217,17 +225,24 @@ async function loadStats(period) {
     const rec = s.recommended_daily;
     const avg = s.averages;
     const pct = (v, r) => r > 0 ? Math.min(100, Math.round((v / r) * 100)) : 0;
+    const bar = (val, recVal, cls) => `<div class="bar-wrap"><div class="bar ${cls}" style="width:${pct(val, recVal)}%"></div></div>`;
     container.innerHTML = `
       <div class="row"><span class="label">カロリー</span><span>${s.totals.calories} kcal / 日平均 ${avg.calories}</span></div>
-      <div class="bar-wrap"><div class="bar" style="width:${pct(avg.calories, rec.calories)}%"></div></div>
+      ${bar(avg.calories, rec.calories, 'cal')}
       <div class="row"><span class="label">タンパク質</span><span>${s.totals.protein.toFixed(1)} g / 日平均 ${avg.protein}</span></div>
-      <div class="bar-wrap"><div class="bar" style="width:${pct(avg.protein, rec.protein)}%"></div></div>
+      ${bar(avg.protein, rec.protein, 'protein')}
       <div class="row"><span class="label">脂質</span><span>${s.totals.fat.toFixed(1)} g / 日平均 ${avg.fat}</span></div>
-      <div class="bar-wrap"><div class="bar" style="width:${pct(avg.fat, rec.fat)}%"></div></div>
+      ${bar(avg.fat, rec.fat, 'fat')}
       <div class="row"><span class="label">炭水化物</span><span>${s.totals.carbs.toFixed(1)} g / 日平均 ${avg.carbs}</span></div>
-      <div class="bar-wrap"><div class="bar" style="width:${pct(avg.carbs, rec.carbs)}%"></div></div>
+      ${bar(avg.carbs, rec.carbs, 'carbs')}
+      <div class="row"><span class="label">鉄</span><span>${(s.totals.iron || 0).toFixed(1)} mg / 日平均 ${((s.totals.iron || 0) / (s.days || 1)).toFixed(1)}</span></div>
+      ${bar((s.totals.iron || 0) / (s.days || 1), rec.iron || 10, 'mineral')}
+      <div class="row"><span class="label">カルシウム</span><span>${(s.totals.calcium || 0).toFixed(0)} mg / 日平均 ${((s.totals.calcium || 0) / (s.days || 1)).toFixed(0)}</span></div>
+      ${bar((s.totals.calcium || 0) / (s.days || 1), rec.calcium || 700, 'mineral')}
+      <div class="row"><span class="label">ビタミンC</span><span>${(s.totals.vitamin_c || 0).toFixed(0)} mg / 日平均 ${((s.totals.vitamin_c || 0) / (s.days || 1)).toFixed(0)}</span></div>
+      ${bar((s.totals.vitamin_c || 0) / (s.days || 1), rec.vitamin_c || 100, 'vitamin')}
       <div class="row"><span class="label">外食費</span><span>${s.totals.price} 円 / 日平均 ${avg.price}</span></div>
-      <p class="hint" style="margin-top:12px">推奨（1日）: カロリー${rec.calories}kcal, P${rec.protein}g, F${rec.fat}g, C${rec.carbs}g</p>
+      <p class="hint" style="margin-top:12px">推奨（1日）: カロリー${rec.calories}kcal, タンパク質${rec.protein}g, 脂質${rec.fat}g, 炭水化物${rec.carbs}g</p>
     `;
   } catch (e) {
     container.innerHTML = '<p class="hint">データを取得できませんでした</p>';
