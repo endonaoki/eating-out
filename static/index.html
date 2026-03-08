@@ -3,81 +3,112 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Eating Out - 外食管理</title>
+  <title>Eating Out - 外食と健康のバランス</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body>
   <div id="app">
-    <header>
-      <h1>🍽️ Eating Out</h1>
-      <p class="tagline">外食特化・食事管理</p>
+    <header class="hero">
+      <div class="hero-overlay"></div>
+      <h1>Eating Out</h1>
+      <p class="tagline">外食と健康のバランスを、シンプルに。</p>
     </header>
 
-    <!-- ユーザー未設定時 -->
     <section id="setup" class="card" style="display:none">
       <h2>はじめに</h2>
-      <p>1日の目標カロリーと外食予算を設定してください</p>
+      <p>目標とプロフィールを設定してください</p>
       <form id="setupForm">
-        <label>目標カロリー (kcal) <input type="number" id="calorieLimit" value="2000" min="500" max="5000"></label>
+        <label>目標カロリー (kcal/日) <input type="number" id="calorieLimit" value="2000" min="500" max="5000"></label>
         <label>外食予算 (円/日) <input type="number" id="budgetLimit" value="1500" min="0" max="50000"></label>
-        <button type="submit">開始</button>
+        <label>性別 <select id="gender">
+          <option value="">未設定</option>
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select></label>
+        <label>生年 <input type="number" id="birthYear" placeholder="例: 1990" min="1920" max="2010"></label>
+        <button type="submit" class="primary">開始</button>
       </form>
     </section>
 
-    <!-- メイン画面 -->
     <section id="main" style="display:none">
-      <!-- 本日の残高 -->
       <section class="card summary">
         <h2>本日の残り <button id="settingsBtn" class="text-btn">設定</button></h2>
         <div class="stats">
-          <div class="stat">
-            <span class="value" id="remainingCal">-</span>
-            <span class="unit">kcal</span>
-          </div>
-          <div class="stat">
-            <span class="value" id="remainingBudget">-</span>
-            <span class="unit">円</span>
-          </div>
+          <div class="stat"><span class="value" id="remainingCal">-</span><span class="unit">kcal</span></div>
+          <div class="stat"><span class="value" id="remainingBudget">-</span><span class="unit">円</span></div>
         </div>
         <p class="sub">本日 <span id="mealCount">0</span> 食記録</p>
       </section>
 
-      <!-- 夜ご飯を探す -->
       <section class="card">
-        <h2>🔍 夜ご飯を探す</h2>
-        <button id="findBtn" class="primary">現在地から検索</button>
+        <h2>店舗を探す</h2>
+        <div class="search-actions">
+          <button id="findBtn" class="primary">現在地から検索</button>
+          <button id="mapBtn" class="secondary">地図で場所を指定</button>
+        </div>
         <p id="locationStatus" class="hint"></p>
         <div id="recommendList" class="list"></div>
       </section>
 
-      <!-- 食事記録 -->
       <section class="card">
-        <h2>📝 食事を記録</h2>
-        <div id="logFromRecommend" style="display:none">
-          <p class="hint">上の提案から選んで記録できます</p>
-        </div>
+        <h2>食事を記録</h2>
         <form id="manualLogForm">
-          <label>メニュー（手動）<input type="text" id="manualMenu" placeholder="例: ラーメン"></label>
+          <label>メニュー名 <input type="text" id="manualMenu" placeholder="例: ラーメン"></label>
           <label>カロリー (kcal) <input type="number" id="manualCal" min="0"></label>
           <label>金額 (円) <input type="number" id="manualPrice" min="0"></label>
+          <label>タンパク質 (g) <input type="number" id="manualProtein" min="0" step="0.1" placeholder="任意"></label>
+          <label>脂質 (g) <input type="number" id="manualFat" min="0" step="0.1" placeholder="任意"></label>
+          <label>炭水化物 (g) <input type="number" id="manualCarbs" min="0" step="0.1" placeholder="任意"></label>
           <button type="submit">記録</button>
         </form>
       </section>
+
+      <section class="card">
+        <h2>健康バランス</h2>
+        <div class="period-tabs">
+          <button class="tab active" data-period="day">日</button>
+          <button class="tab" data-period="week">週</button>
+          <button class="tab" data-period="month">月</button>
+          <button class="tab" data-period="year">年</button>
+        </div>
+        <div id="statsContent" class="stats-detail"></div>
+      </section>
     </section>
 
-    <!-- 設定モーダル -->
     <div id="settingsModal" class="modal" style="display:none">
       <div class="modal-content">
-        <h3>目標設定</h3>
+        <h3>目標・プロフィール</h3>
         <form id="settingsForm">
-          <label>目標カロリー (kcal) <input type="number" id="settingsCal" min="500" max="5000"></label>
-          <label>外食予算 (円/日) <input type="number" id="settingsBudget" min="0" max="50000"></label>
-          <button type="submit">保存</button>
-          <button type="button" id="settingsClose">閉じる</button>
+          <label>目標カロリー <input type="number" id="settingsCal" min="500" max="5000"></label>
+          <label>外食予算 <input type="number" id="settingsBudget" min="0" max="50000"></label>
+          <label>性別 <select id="settingsGender">
+            <option value="">未設定</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+          </select></label>
+          <label>生年 <input type="number" id="settingsBirthYear" min="1920" max="2010"></label>
+          <div class="modal-btns">
+            <button type="submit">保存</button>
+            <button type="button" id="settingsClose">閉じる</button>
+          </div>
         </form>
       </div>
     </div>
+
+    <div id="mapModal" class="modal" style="display:none">
+      <div class="modal-content map-modal">
+        <h3>検索場所を地図で指定</h3>
+        <p class="hint">地図をクリックしてピンを置き、この場所で検索を実行</p>
+        <div id="map" style="height:320px; border-radius:8px;"></div>
+        <div class="map-actions">
+          <button id="mapSearchBtn" class="primary">この場所で検索</button>
+          <button type="button" id="mapClose">閉じる</button>
+        </div>
+      </div>
+    </div>
   </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

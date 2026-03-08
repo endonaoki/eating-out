@@ -35,9 +35,11 @@ cd eating-out
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/seed_chains.py     # チェーン・メニュー投入
-python scripts/seed_restaurants.py # 店舗投入（座標付き）
-python main.py                    # または: uvicorn main:app --reload
+python scripts/seed_chains.py       # チェーン・メニュー投入
+python scripts/seed_restaurants.py   # 店舗投入（八王子・新宿・渋谷等）
+python scripts/migrate_nutrition.py # 栄養素カラム追加
+python scripts/update_menu_nutrition.py  # メニューに栄養素推定値を追加
+python main.py
 ```
 
 API: http://localhost:8000  
@@ -47,9 +49,10 @@ Swagger: http://localhost:8000/docs
 
 1. `python main.py` で起動
 2. ブラウザで http://localhost:8000 を開く
-3. 目標カロリー・予算を設定して開始
-4. 「現在地から検索」で近くのメニューを提案
+3. 目標カロリー・予算・性別・生年を設定
+4. **現在地から検索** または **地図で場所を指定**（勤務先・最寄駅など）でメニューを検索
 5. 食べたメニューを記録
+6. **健康バランス**で日/週/月/年の栄養摂取を確認
 
 ## 主なAPI
 

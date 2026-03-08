@@ -15,6 +15,8 @@ def create_user(data: UserCreate, session: Session = Depends(get_db)):
     user = User(
         daily_calorie_limit=data.daily_calorie_limit,
         daily_budget_limit=data.daily_budget_limit,
+        gender=data.gender,
+        birth_year=data.birth_year,
     )
     session.add(user)
     session.commit()
@@ -41,6 +43,10 @@ def update_user(user_id: int, data: UserUpdate, session: Session = Depends(get_d
         user.daily_calorie_limit = data.daily_calorie_limit
     if data.daily_budget_limit is not None:
         user.daily_budget_limit = data.daily_budget_limit
+    if data.gender is not None:
+        user.gender = data.gender
+    if data.birth_year is not None:
+        user.birth_year = data.birth_year
     session.commit()
     session.refresh(user)
     return user

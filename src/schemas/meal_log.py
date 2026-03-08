@@ -5,9 +5,12 @@ from pydantic import BaseModel, Field
 
 class MealLogCreate(BaseModel):
     menu_id: int | None = None
-    eaten_at: datetime | None = None  # 未指定なら現在時刻
-    manual_calories: int | None = None  # 非チェーン時
-    manual_price: int | None = None  # 非チェーン時
+    eaten_at: datetime | None = None
+    manual_calories: int | None = None
+    manual_price: int | None = None
+    manual_protein: float | None = None
+    manual_fat: float | None = None
+    manual_carbs: float | None = None
 
 
 class MealLogResponse(BaseModel):

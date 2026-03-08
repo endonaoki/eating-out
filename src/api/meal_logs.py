@@ -47,6 +47,9 @@ def create_meal_log(
         eaten_at=eaten_at,
         manual_calories=data.manual_calories,
         manual_price=data.manual_price,
+        manual_protein=data.manual_protein,
+        manual_fat=data.manual_fat,
+        manual_carbs=data.manual_carbs,
     )
     session.add(log)
     session.commit()
