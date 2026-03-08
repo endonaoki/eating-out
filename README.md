@@ -13,11 +13,31 @@
 - [要件定義書](docs/REQUIREMENTS.md)
 - [GitHubセットアップ手順](docs/GITHUB_SETUP.md)
 
-## プロジェクト構成（予定）
+## プロジェクト構成
 
 ```
 eating-out/
-├── docs/           # 設計・要件定義
-├── src/            # アプリケーション本体
-└── README.md
+├── config.py       # 設定
+├── main.py        # FastAPI エントリーポイント
+├── docs/          # 設計・要件定義
+├── scripts/       # シードスクリプト
+├── src/
+│   ├── api/       # API ルート
+│   ├── database/  # DB接続
+│   └── models/    # SQLAlchemy モデル
+└── data/          # SQLite DB（gitignore）
 ```
+
+## セットアップ
+
+```bash
+cd eating-out
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python scripts/seed_chains.py   # チェーン・メニュー投入
+python main.py                  # または: uvicorn main:app --reload
+```
+
+API: http://localhost:8000  
+Swagger: http://localhost:8000/docs
