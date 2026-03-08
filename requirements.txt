@@ -9,4 +9,4 @@ alembic>=1.13.0
 # Utils
 pydantic>=2.5.0
 python-dotenv>=1.0.0
-httpx>=0.26.0
+httpx>=0.26.0  # API呼び出し・Places連携

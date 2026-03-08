@@ -1,5 +1,6 @@
 """提案API - 予算・カロリー内のメニューを近くの店舗と一緒に提案"""
 from datetime import date
+from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -7,6 +8,7 @@ from sqlalchemy import func
 from src.database import get_db
 from src.models import User, Restaurant, Chain, Menu, MealLog
 from src.services.geo import haversine_km
+from src.services.places import fetch_nearby_restaurants
 
 router = APIRouter(prefix="/recommend", tags=["recommend"])
 
@@ -19,6 +21,7 @@ def recommend(
     user_id: int | None = Query(None, description="ユーザーID（指定時は残り予算・カロリーでフィルタ）"),
     budget: int | None = Query(None, description="予算上限(円)（user_id未指定時）"),
     calories: int | None = Query(None, description="カロリー上限(kcal)（user_id未指定時）"),
+    open_now: bool = Query(False, description="営業中のみ（Places API連携時）"),
     session: Session = Depends(get_db),
 ):
     """
@@ -58,36 +61,61 @@ def recommend(
         budget_limit = budget if budget is not None else 99999
         calorie_limit = calories if calories is not None else 99999
 
-    # 半径内の店舗を取得（自社DB）
-    restaurants = session.query(Restaurant).join(Chain).all()
-    nearby = []
-    for r in restaurants:
+    # 店舗一覧を構築: 自社DB + Places API（キー設定時）
+    chains = {c.chain_id: c for c in session.query(Chain).all()}
+    chain_names = {c.chain_name: c.chain_id for c in chains.values()}
+
+    # 自社DBの店舗
+    nearby: list[tuple[Any, str, float]] = []  # (restaurant_or_place, chain_name, dist_km)
+    for r in session.query(Restaurant).all():
         dist = haversine_km(lat, lng, float(r.latitude), float(r.longitude))
         if dist <= radius_km:
-            nearby.append((r, dist))
+            chain = chains.get(r.chain_id)
+            nearby.append((r, chain.chain_name if chain else "", dist))
+
+    # Places API（キー設定時）: チェーン名にマッチする店舗を追加
+    places_data = fetch_nearby_restaurants(
+        lat, lng, radius_m=int(radius_km * 1000), open_now=open_now
+    )
+    if places_data:
+        for p in places_data:
+            dist = haversine_km(lat, lng, p["lat"], p["lng"])
+            if dist > radius_km:
+                continue
+            name = p.get("name") or ""
+            for chain_name, cid in chain_names.items():
+                if chain_name in name:
+                    nearby.append((p, chain_name, dist))
+                    break
 
     # 距離順ソート
-    nearby.sort(key=lambda x: x[1])
+    nearby.sort(key=lambda x: x[2])
 
     # 各店舗のチェーンで、予算・カロリー内のメニューを取得
     results = []
-    for restaurant, dist_km in nearby:
+    for item, chain_name, dist_km in nearby:
+        chain_id = chain_names.get(chain_name)
+        if not chain_id:
+            continue
+        restaurant = item if isinstance(item, Restaurant) else None
+        place = item if isinstance(item, dict) else None
+        rest_name = restaurant.name if restaurant else (place.get("name", "") or "")
         menus = (
             session.query(Menu)
             .filter(
-                Menu.chain_id == restaurant.chain_id,
+                Menu.chain_id == chain_id,
                 Menu.is_available == True,
                 Menu.price <= budget_limit,
                 Menu.calories <= calorie_limit,
             )
             .all()
         )
-        chain = session.get(Chain, restaurant.chain_id)
         for m in menus:
             results.append(
                 {
-                    "restaurant_name": restaurant.name,
-                    "chain_name": chain.chain_name if chain else "",
+                    "menu_id": m.menu_id,
+                    "restaurant_name": rest_name,
+                    "chain_name": chain_name,
                     "menu_name": m.menu_name,
                     "price": m.price,
                     "calories": m.calories,

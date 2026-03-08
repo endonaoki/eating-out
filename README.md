@@ -43,6 +43,14 @@ python main.py                    # または: uvicorn main:app --reload
 API: http://localhost:8000  
 Swagger: http://localhost:8000/docs
 
+## 使い方
+
+1. `python main.py` で起動
+2. ブラウザで http://localhost:8000 を開く
+3. 目標カロリー・予算を設定して開始
+4. 「現在地から検索」で近くのメニューを提案
+5. 食べたメニューを記録
+
 ## 主なAPI
 
 | エンドポイント | 説明 |
@@ -52,3 +60,7 @@ Swagger: http://localhost:8000/docs
 | `POST /users` | ユーザー作成 |
 | `GET /meal-logs/users/{id}/today` | 本日の残り予算・カロリー |
 | `GET /recommend?lat=&lng=&budget=&calories=` | 近くの店舗×メニュー提案 |
+
+## 環境変数（.env）
+
+- `GOOGLE_PLACES_API_KEY` … 設定時、Places APIで店舗検索を拡張（営業中フィルタ対応）

@@ -2,6 +2,9 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # プロジェクトルート
 BASE_DIR = Path(__file__).resolve().parent
 

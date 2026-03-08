@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eating Out - 外食管理</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>🍽️ Eating Out</h1>
+      <p class="tagline">外食特化・食事管理</p>
+    </header>
+
+    <!-- ユーザー未設定時 -->
+    <section id="setup" class="card" style="display:none">
+      <h2>はじめに</h2>
+      <p>1日の目標カロリーと外食予算を設定してください</p>
+      <form id="setupForm">
+        <label>目標カロリー (kcal) <input type="number" id="calorieLimit" value="2000" min="500" max="5000"></label>
+        <label>外食予算 (円/日) <input type="number" id="budgetLimit" value="1500" min="0" max="50000"></label>
+        <button type="submit">開始</button>
+      </form>
+    </section>
+
+    <!-- メイン画面 -->
+    <section id="main" style="display:none">
+      <!-- 本日の残高 -->
+      <section class="card summary">
+        <h2>本日の残り <button id="settingsBtn" class="text-btn">設定</button></h2>
+        <div class="stats">
+          <div class="stat">
+            <span class="value" id="remainingCal">-</span>
+            <span class="unit">kcal</span>
+          </div>
+          <div class="stat">
+            <span class="value" id="remainingBudget">-</span>
+            <span class="unit">円</span>
+          </div>
+        </div>
+        <p class="sub">本日 <span id="mealCount">0</span> 食記録</p>
+      </section>
+
+      <!-- 夜ご飯を探す -->
+      <section class="card">
+        <h2>🔍 夜ご飯を探す</h2>
+        <button id="findBtn" class="primary">現在地から検索</button>
+        <p id="locationStatus" class="hint"></p>
+        <div id="recommendList" class="list"></div>
+      </section>
+
+      <!-- 食事記録 -->
+      <section class="card">
+        <h2>📝 食事を記録</h2>
+        <div id="logFromRecommend" style="display:none">
+          <p class="hint">上の提案から選んで記録できます</p>
+        </div>
+        <form id="manualLogForm">
+          <label>メニュー（手動）<input type="text" id="manualMenu" placeholder="例: ラーメン"></label>
+          <label>カロリー (kcal) <input type="number" id="manualCal" min="0"></label>
+          <label>金額 (円) <input type="number" id="manualPrice" min="0"></label>
+          <button type="submit">記録</button>
+        </form>
+      </section>
+    </section>
+
+    <!-- 設定モーダル -->
+    <div id="settingsModal" class="modal" style="display:none">
+      <div class="modal-content">
+        <h3>目標設定</h3>
+        <form id="settingsForm">
+          <label>目標カロリー (kcal) <input type="number" id="settingsCal" min="500" max="5000"></label>
+          <label>外食予算 (円/日) <input type="number" id="settingsBudget" min="0" max="50000"></label>
+          <button type="submit">保存</button>
+          <button type="button" id="settingsClose">閉じる</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
