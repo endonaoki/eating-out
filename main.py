@@ -5,6 +5,9 @@ from fastapi import FastAPI
 
 from src.database import init_db
 from src.api.chains import router as chains_router
+from src.api.users import router as users_router
+from src.api.meal_logs import router as meal_logs_router
+from src.api.recommend import router as recommend_router
 
 
 @asynccontextmanager
@@ -23,6 +26,9 @@ app = FastAPI(
 )
 
 app.include_router(chains_router)
+app.include_router(users_router)
+app.include_router(meal_logs_router)
+app.include_router(recommend_router)
 
 
 @app.get("/")

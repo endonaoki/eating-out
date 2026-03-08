@@ -35,9 +35,20 @@ cd eating-out
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/seed_chains.py   # チェーン・メニュー投入
-python main.py                  # または: uvicorn main:app --reload
+python scripts/seed_chains.py     # チェーン・メニュー投入
+python scripts/seed_restaurants.py # 店舗投入（座標付き）
+python main.py                    # または: uvicorn main:app --reload
 ```
 
 API: http://localhost:8000  
 Swagger: http://localhost:8000/docs
+
+## 主なAPI
+
+| エンドポイント | 説明 |
+|----------------|------|
+| `GET /chains` | チェーン一覧 |
+| `GET /chains/{id}/menus` | メニュー一覧 |
+| `POST /users` | ユーザー作成 |
+| `GET /meal-logs/users/{id}/today` | 本日の残り予算・カロリー |
+| `GET /recommend?lat=&lng=&budget=&calories=` | 近くの店舗×メニュー提案 |
