@@ -11,6 +11,7 @@
 ## ドキュメント
 
 - [要件定義書](docs/REQUIREMENTS.md)
+- [GitHubセットアップ手順](docs/GITHUB_SETUP.md)
 
 ## プロジェクト構成（予定）
 
